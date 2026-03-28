@@ -1,3 +1,5 @@
+using LaptopStore.Repositories.Context;
+using Microsoft.EntityFrameworkCore;
 
 namespace LaptopStore.API
 {
@@ -8,11 +10,14 @@ namespace LaptopStore.API
             var builder = WebApplication.CreateBuilder(args);
 
             // Add services to the container.
-
             builder.Services.AddControllers();
             // Learn more about configuring Swagger/OpenAPI at https://aka.ms/aspnetcore/swashbuckle
             builder.Services.AddEndpointsApiExplorer();
             builder.Services.AddSwaggerGen();
+
+            // Đăng ký DbContext với connection string "DefaultConnection"
+            builder.Services.AddDbContext<LaptopStoreDbContext>(options =>
+                options.UseSqlServer(builder.Configuration.GetConnectionString("DefaultConnection")));
 
             var app = builder.Build();
 
@@ -26,7 +31,6 @@ namespace LaptopStore.API
             app.UseHttpsRedirection();
 
             app.UseAuthorization();
-
 
             app.MapControllers();
 
