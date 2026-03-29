@@ -1,27 +1,34 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 
 namespace LaptopStore.Repositories.Entities
 {
+    // [ProductEntity] : Sản phẩm cốt lõi. Dùng int giúp URL thân thiện (vd: /products/105) và tăng tốc độ indexing khi search.
     public class Product
     {
-        public Guid Id { get; set; }
-
+        public int Id { get; set; }
         public string Name { get; set; } = null!;
-        public string? Description { get; set; }
-
+        public string Description { get; set; } = string.Empty;
         public decimal Price { get; set; }
         public int StockQuantity { get; set; }
 
-        public string? ImageUrl { get; set; }
-        public bool IsActive { get; set; } = true;
+        // Thông số kỹ thuật
+        public string Cpu { get; set; } = string.Empty;
+        public string Ram { get; set; } = string.Empty;
+        public string Storage { get; set; } = string.Empty;
+        public string ScreenSize { get; set; } = string.Empty;
+        public string Vga { get; set; } = string.Empty;
 
-        public Guid BrandId { get; set; }
+        public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
+
+        // Khóa ngoại
+        public int BrandId { get; set; }
         public Brand Brand { get; set; } = null!;
 
-        public Guid CategoryId { get; set; }
+        public int CategoryId { get; set; }
         public Category Category { get; set; } = null!;
 
-        public ICollection<OrderDetail> OrderDetails { get; set; } = new List<OrderDetail>();
+        // Navigation
+        public ICollection<ProductImage> ProductImages { get; set; } = new List<ProductImage>();
     }
 }
