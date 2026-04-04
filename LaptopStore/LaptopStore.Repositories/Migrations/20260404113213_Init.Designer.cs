@@ -12,8 +12,8 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 namespace LaptopStore.Repositories.Migrations
 {
     [DbContext(typeof(LaptopStoreDbContext))]
-    [Migration("20260329124143_InitialCreate")]
-    partial class InitialCreate
+    [Migration("20260404113213_Init")]
+    partial class Init
     {
         /// <inheritdoc />
         protected override void BuildTargetModel(ModelBuilder modelBuilder)
@@ -276,14 +276,13 @@ namespace LaptopStore.Repositories.Migrations
                 {
                     b.Property<Guid>("Id")
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("uniqueidentifier");
+                        .HasColumnType("uniqueidentifier")
+                        .HasDefaultValueSql("NEWSEQUENTIALID()");
 
                     b.Property<string>("Name")
                         .IsRequired()
-                        .ValueGeneratedOnAdd()
                         .HasMaxLength(50)
-                        .HasColumnType("nvarchar(50)")
-                        .HasDefaultValueSql("NEWSEQUENTIALID()");
+                        .HasColumnType("nvarchar(50)");
 
                     b.HasKey("Id");
 

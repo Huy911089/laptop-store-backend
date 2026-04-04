@@ -17,7 +17,7 @@ namespace LaptopStore.Repositories.Configurations
             builder.ToTable("Roles");
             // [RoleConfiguration] : Sử dụng NEWSEQUENTIALID() để sinh Guid tuần tự, tối ưu hiệu năng Index cho SQL Server.
             builder.HasKey(x => x.Id);
-            builder.Property(x => x.Name).HasDefaultValueSql("NEWSEQUENTIALID()");
+            builder.Property(x => x.Id).HasDefaultValueSql("NEWSEQUENTIALID()");
 
             builder.Property(x => x.Name).IsRequired().HasMaxLength(50);
         }

@@ -16,12 +16,15 @@ namespace LaptopStore.API
             builder.Services.AddSwaggerGen();
 
             // [Program.cs] : Cấu hình DbContext để EF Core biết rằng các file Migrations sẽ nằm ở project Repositories.
+            //builder.Services.AddDbContext<LaptopStoreDbContext>(options =>
+            //    options.UseSqlServer(
+            //        builder.Configuration.GetConnectionString("DefaultConnection"),
+            //        // [Program.cs] : Chỉ định rõ Assembly chứa Migrations là LaptopStore.Repositories
+            //        b => b.MigrationsAssembly("LaptopStore.Repositories")
+            //    ));
             builder.Services.AddDbContext<LaptopStoreDbContext>(options =>
-                options.UseSqlServer(
-                    builder.Configuration.GetConnectionString("DefaultConnection"),
-                    // [Program.cs] : Chỉ định rõ Assembly chứa Migrations là LaptopStore.Repositories
-                    b => b.MigrationsAssembly("LaptopStore.Repositories")
-                ));
+    options.UseSqlServer(
+        builder.Configuration.GetConnectionString("DefaultConnection")));
 
             var app = builder.Build();
 
