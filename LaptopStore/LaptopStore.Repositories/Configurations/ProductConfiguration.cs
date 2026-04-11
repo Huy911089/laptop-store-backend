@@ -23,6 +23,7 @@ namespace LaptopStore.Repositories.Configurations
 
             //[ProductConfiguration] : Thiết lập quan hệ 1 - Nhiều với Category. 
             // Dùng Restrict để ngăn chặn việc xóa Danh mục nếu Danh mục đó đang có Sản phẩm.
+
             builder.HasOne(x => x.Category)
                    .WithMany(p => p.Products) // Giả định Category không chứa ICollection<Product> để tránh lặp vòng, nếu có thì điền p => p.Products
                    .HasForeignKey(x => x.CategoryId)
@@ -36,6 +37,7 @@ namespace LaptopStore.Repositories.Configurations
             // Từ nay về sau, MỌI câu lệnh Select/Get lấy từ bảng Product sẽ TỰ ĐỘNG lọc bỏ những dòng có IsDeleted = true
             // Cái này sẽ tự động chăn ở dưới database luôn để tránh ở tầng service mình tự thêm (.Where(p => p.IsDeleted == false))
             builder.HasQueryFilter(p => !p.IsDeleted);
+
         }
     }
 }

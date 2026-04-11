@@ -25,6 +25,7 @@ namespace LaptopStore.Repositories.Configurations
                    .WithMany(o => o.Orders)
                    .HasForeignKey(x => x.UserId)
                    .OnDelete(DeleteBehavior.Restrict);
+
         }
     }
 }
