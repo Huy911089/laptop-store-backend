@@ -40,7 +40,7 @@ namespace LaptopStore.Services.Implements
         {
             _logger.LogInformation($"[CategoryService] : Bắt đầu xóa mềm danh mục Id = {id}.");
             var existingCategory = await _unitOfWork.Categories.GetAsync(c => c.Id == id);
-            if (existingCategory != null)
+            if (existingCategory == null)
             {
                 _logger.LogWarning($"[CategoryService] : Thất bại khi xóa. Không tìm thấy danh mục Id = {id}.");
                 return false;

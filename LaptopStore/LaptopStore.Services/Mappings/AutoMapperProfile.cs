@@ -20,7 +20,6 @@ namespace LaptopStore.Services.Mappings
             // [AutoMapperProfile] : Cấu hình ánh xạ từ Entity Category sang CategoryResponseDto.
             CreateMap<Category, CategoryResponseDto>();
 
-
         }
     }
 }
