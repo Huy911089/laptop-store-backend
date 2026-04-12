@@ -14,7 +14,7 @@ namespace LaptopStore.Repositories.Entities
         public string? Address { get; set; }
         public bool IsDeleted { get; set; } = false;
         // Khóa ngoại tới Role
-        public Guid RoleId { get; set; }
+        public int RoleId { get; set; }
         public Role Role { get; set; } = null!;
 
         // Navigation properties
