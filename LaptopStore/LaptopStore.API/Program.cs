@@ -39,7 +39,7 @@ namespace LaptopStore.API
             builder.Services.AddScoped<IProductService, ProductService>();
 
             // [Program] : Đăng ký AutoMapper, tự động quét các Profile trong assembly của tầng Services
-            builder.Services.AddAutoMapper(typeof(AutoMapperProfile).Assembly);
+            builder.Services.AddAutoMapper(typeof(AutoMapperProfile));
 
             var app = builder.Build();
 
