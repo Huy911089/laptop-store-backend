@@ -16,6 +16,7 @@ namespace LaptopStore.Repositories.Interfaces
         IGenericRepository<ProductImage> ProductImages { get; }
         IGenericRepository<Role> Roles { get; }
         IGenericRepository<User> Users { get; }
+        IGenericRepository<RefreshToken> RefreshTokens { get; }
         // [IUnitOfWork] : Hàm quan trọng nhất, gọi SaveChangesAsync() của DbContext để áp dụng mọi thay đổi xuống DB.
         Task<int> SaveChangesAsync();
     }

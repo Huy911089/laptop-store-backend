@@ -25,7 +25,7 @@ namespace LaptopStore.Repositories.Configurations
             builder.Property(x => x.Address).HasMaxLength(500);
 
             // [UserConfiguration] : Tạo Unique Index cho Email để đảm bảo không có 2 tài khoản trùng Email.
-            //builder.HasIndex(x => x.Email).IsUnique();
+            builder.HasIndex(x => x.Email).IsUnique();
 
             // [UserConfiguration] : Quan hệ 1-Nhiều với Role. Không cho phép xóa Role nếu đang có User thuộc Role đó (Restrict).
             builder.HasOne(x => x.Role)

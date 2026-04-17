@@ -19,7 +19,7 @@ namespace LaptopStore.Repositories.Implements
         private IGenericRepository<ProductImage>? _productImages;
         private IGenericRepository<Role>? _roles;
         private IGenericRepository<User>? _users;
-
+        private IGenericRepository<RefreshToken>? _refreshTokens;
         public UnitOfWork(LaptopStoreDbContext context) 
         {
             _context = context;
@@ -45,6 +45,7 @@ namespace LaptopStore.Repositories.Implements
         public IGenericRepository<Role> Roles => _roles ??= new GenericRepository<Role>(_context);
 
         public IGenericRepository<User> Users => _users ??= new GenericRepository<User>(_context);
+        public IGenericRepository<RefreshToken> RefreshTokens => _refreshTokens ??= new GenericRepository<RefreshToken>(_context);
 
         public void Dispose()
         {

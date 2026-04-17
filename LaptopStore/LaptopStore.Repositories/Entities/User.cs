@@ -20,5 +20,7 @@ namespace LaptopStore.Repositories.Entities
         // Navigation properties
         public Cart? Cart { get; set; }
         public ICollection<Order> Orders { get; set; } = new List<Order>();
+        // [User] : Một user có thể có nhiều refresh token nếu đăng nhập trên nhiều thiết bị.
+        public ICollection<RefreshToken> RefreshTokens { get; set; } = new List<RefreshToken>();
     }
 }

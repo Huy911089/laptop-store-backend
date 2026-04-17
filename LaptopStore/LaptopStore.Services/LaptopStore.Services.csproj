@@ -9,6 +9,7 @@
   <ItemGroup>
     <PackageReference Include="AutoMapper.Extensions.Microsoft.DependencyInjection" Version="12.0.1" />
     <PackageReference Include="BCrypt.Net-Next" Version="4.1.0" />
+    <PackageReference Include="System.IdentityModel.Tokens.Jwt" Version="8.17.0" />
   </ItemGroup>
 	
   <ItemGroup>
@@ -16,9 +17,10 @@
   </ItemGroup>
 	
   <ItemGroup>
-    <Folder Include="DTOs\Auth\" />
+	 <Folder Include="DTOs\Auth\" />
     <Folder Include="DTOs\Cart\" />
     <Folder Include="DTOs\Order\" />
+	<Folder Include="Configurations\" />
   </ItemGroup>
 
 </Project>
