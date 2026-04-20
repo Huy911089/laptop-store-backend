@@ -9,6 +9,7 @@ using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.IdentityModel.Tokens;
+using Microsoft.OpenApi.Models;
 using System.Text;
 
 namespace LaptopStore.API
@@ -23,7 +24,40 @@ namespace LaptopStore.API
             builder.Services.AddControllers();
             // Learn more about configuring Swagger/OpenAPI at https://aka.ms/aspnetcore/swashbuckle
             builder.Services.AddEndpointsApiExplorer();
-            builder.Services.AddSwaggerGen();
+            // [Program] : Cấu hình Swagger và thêm định nghĩa Bearer để test API có Authorize dễ hơn ngay trong Swagger UI.
+            builder.Services.AddSwaggerGen(option => 
+            {
+                option.SwaggerDoc("v1", new Microsoft.OpenApi.Models.OpenApiInfo 
+                {
+                    Title = "LaptopStore API",
+                    Version = "v1"
+                });
+
+                option.AddSecurityDefinition("Bearer", new Microsoft.OpenApi.Models.OpenApiSecurityScheme 
+                {
+                    Name = "Authorization",
+                    Type = Microsoft.OpenApi.Models.SecuritySchemeType.Http,
+                    Scheme = "bearer",
+                    BearerFormat = "JWT",
+                    In = Microsoft.OpenApi.Models.ParameterLocation.Header,
+                    Description = "Nhập token theo format: Bearer {your access token}"
+                });
+                option.AddSecurityRequirement(new Microsoft.OpenApi.Models.OpenApiSecurityRequirement
+                {
+                    {
+                        new OpenApiSecurityScheme
+                        {
+                            Reference = new OpenApiReference
+                            {
+                                Type = ReferenceType.SecurityScheme,
+                                Id = "Bearer"
+                            }
+                        },
+                        Array.Empty<string>()
+                    }
+
+                });
+            });
 
             builder.Services.AddDbContext<LaptopStoreDbContext>(options =>
     options.UseSqlServer(
@@ -66,6 +100,8 @@ namespace LaptopStore.API
             builder.Services.AddScoped<IProductService, ProductService>();
             builder.Services.AddScoped<IAuthService, AuthService>();
             builder.Services.AddScoped<ITokenService, TokenService>();
+            builder.Services.AddScoped<IBrandService, BrandService>();
+            builder.Services.AddScoped<ICartService,CartService>();
             // [Program] : Đăng ký AutoMapper, tự động quét các Profile trong assembly của tầng Services
             builder.Services.AddAutoMapper(typeof(AutoMapperProfile));
 

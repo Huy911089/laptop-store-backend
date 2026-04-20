@@ -1,6 +1,8 @@
 ﻿using AutoMapper;
 using LaptopStore.Repositories.Entities;
 using LaptopStore.Services.DTOs.Auth;
+using LaptopStore.Services.DTOs.Brand;
+using LaptopStore.Services.DTOs.Cart;
 using LaptopStore.Services.DTOs.Category;
 using LaptopStore.Services.DTOs.Product;
 using System;
@@ -35,6 +37,15 @@ namespace LaptopStore.Services.Mappings
                 .ForMember(dest => dest.PasswordHash,opt => opt.Ignore())
                 // Bỏ qua RoleId vì ta sẽ tự gán sau khi query DB
                 .ForMember(dest => dest.RoleId, opt => opt.Ignore());
+
+            // BrandRequestDto => Entity Brand
+            CreateMap<BrandRequestDto, Brand>();
+            // Entity Brand => BrandResponseDto
+            CreateMap<Brand, BrandResponseDto>();
+
+            CreateMap<Cart, CartItemResponseDto>()
+                .ForMember(dest => dest.ThumbnailUrl, opt => opt.Ignore());
+            CreateMap<Cart, CartResponseDto>();
         }
     }
 }

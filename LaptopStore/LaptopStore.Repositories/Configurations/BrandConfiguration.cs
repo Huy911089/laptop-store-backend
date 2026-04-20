@@ -16,7 +16,9 @@ namespace LaptopStore.Repositories.Configurations
         {
             builder.ToTable("Brands");
             builder.HasKey(x => x.Id);
+            builder.HasIndex(x => x.Name).IsUnique();
             builder.Property(x => x.Name).IsRequired().HasMaxLength(100);
+            // [BrandConfiguration] : Query filter giúp những bản ghi bị xóa mềm không xuất hiện trong query thông thường.
             builder.HasQueryFilter(b => !b.IsDeleted);
         }
     }
