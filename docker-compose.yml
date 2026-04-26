@@ -1,0 +1,26 @@
+#version: '3.8' # Phiên bản Docker Compose
+
+services: # liệt kê các "món đồ" cần dùng.
+    # --- Dịch vụ 1: SQL Server ---
+    sqlserver: # Tên dịch vụ (tự đặt)
+        image: mcr.microsoft.com/mssql/server:2022-latest # Image chính thức từ Microsoft
+        container_name: laptopstore-sqlserver
+        ports:
+        - "1434:1433" # Ánh xạ cổng: Máy thật 1434 -> Container 1433
+        environment:
+        - ACCEPT_EULA=Y # Bắt buộc: Chấp nhận điều khoản của Microsoft
+        - MSSQL_SA_PASSWORD=LuanLaptopStore@2026  # Mật khẩu tài khoản 'sa' (tự đổi)
+        volumes:
+        - sql_data:/var/opt/mssql # Lưu trữ dữ liệu ra máy thật để không bị mất khi xóa container
+        restart: always # (Mẹo thêm) Cấu hình tự khởi động lại container nếu máy tính restart
+    # --- Dịch vụ 2: Redis ---
+    redis-cache:
+        image: redis:7 # Image Redis version 7 như em đang dùng
+        container_name: laptopstore-redis
+        ports:
+         - "6379:6379" # Ánh xạ cổng: Máy thật 6379 -> Container 6379
+        command: ["redis-server", "--appendonly", "yes"] # Bật chế độ lưu dữ liệu xuống ổ đĩa
+        restart: always # (Mẹo thêm) Cấu hình tự khởi động lại container nếu máy tính restart
+# Định nghĩa nơi lưu trữ dữ liệu bền vững
+volumes:
+    sql_data:

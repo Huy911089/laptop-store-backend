@@ -19,12 +19,18 @@ namespace LaptopStore.Services.Implements
         private readonly IUnitOfWork _unitOfWork;
         private readonly IMapper _mapper;
         private readonly ILogger<BrandService> _logger;
+        private readonly ICacheService _cacheService;
 
-        public BrandService(IUnitOfWork unitOfWork,IMapper mapper, ILogger<BrandService> logger)
+        // Cached
+        private const string ALL_BRANDS_KEY = "brands:all";
+        private const string BRANDS_PREFIX = "brands:id:";
+
+        public BrandService(IUnitOfWork unitOfWork,IMapper mapper, ILogger<BrandService> logger, ICacheService cacheService)
         {
             _unitOfWork = unitOfWork;
             _mapper = mapper;
             _logger = logger;
+            _cacheService = cacheService;
         }
 
         public async Task<BrandResponseDto?> CreateAsync(BrandRequestDto dto)
@@ -48,8 +54,13 @@ namespace LaptopStore.Services.Implements
             await _unitOfWork.Brands.AddAsync(brand);
             await _unitOfWork.SaveChangesAsync();
 
+            var mapperBrand = _mapper.Map<BrandResponseDto?>(brand);
+
+            await _cacheService.RemoveAsync(ALL_BRANDS_KEY);
+            await _cacheService.SetAsync($"{BRANDS_PREFIX}{brand.Id}", mapperBrand,TimeSpan.FromMinutes(5));
+
             _logger.LogInformation("[BrandService] : Tạo thành công thương hiệu mới với Id = {Id}.", brand.Id);
-            return _mapper.Map<BrandResponseDto?>(brand);
+            return mapperBrand;
 
         }
 
@@ -72,6 +83,11 @@ namespace LaptopStore.Services.Implements
             }
             existingBrand.IsDeleted = true;
             await _unitOfWork.SaveChangesAsync();
+
+            await _cacheService.RemoveAsync(ALL_BRANDS_KEY);
+            await _cacheService.RemoveAsync($"{BRANDS_PREFIX}{id}");
+
+
             _logger.LogInformation("[BrandService] : Đã xóa mềm thành công thương hiệu Id = {Id}.", id);
             return true;
         }
@@ -79,22 +95,49 @@ namespace LaptopStore.Services.Implements
         public async Task<IEnumerable<BrandResponseDto>> GetAllAsync()
         {
             _logger.LogInformation("[BrandService] : Bắt đầu lấy danh sách toàn bộ thương hiệu.");
-            ICollection<Brand> brands = await _unitOfWork.Brands.GetAllAsync(tracked: false);
+            var cached = await _cacheService.GetAsync<IEnumerable<BrandResponseDto>>(ALL_BRANDS_KEY);
+            if (cached != null) 
+            {
+                _logger.LogInformation("[BrandService] : Lấy danh sách brands từ Redis cache.");
+                return cached;
+            }
+            ICollection <Brand> brands = await _unitOfWork.Brands.GetAllAsync(tracked: false);
+
+            var mapperBrands = _mapper.Map<IEnumerable<BrandResponseDto>>(brands);
+
+            await _cacheService.SetAsync(ALL_BRANDS_KEY,mapperBrands,TimeSpan.FromMinutes(5));
+            _logger.LogInformation("[BrandService] : Đã lưu danh sách brands vào Redis cache.");
+
             _logger.LogInformation("[BrandService] : Đã lấy thành công {Count} thương hiệu.", brands.Count);
-            return _mapper.Map<IEnumerable<BrandResponseDto>>(brands);
+            return mapperBrands;
 
         }
 
         public async Task<BrandResponseDto?> GetByIdAsync(int id)
         {
             _logger.LogInformation("[BrandService] : Bắt đầu tìm kiếm thương hiệu với Id = {Id}.", id);
+
+            var cached = await _cacheService.GetAsync<BrandResponseDto?>($"{BRANDS_PREFIX}{id}");
+            if (cached != null) 
+            {
+                _logger.LogInformation("[BrandService] : Lấy brand theo {id} từ Redis cache.",id);
+                return cached;
+            }
+
             var existingBrand = await _unitOfWork.Brands.GetAsync(b => b.Id == id, tracked: false);
             if (existingBrand == null) 
             {
                 _logger.LogWarning("[BrandService] : Không tìm thấy thương hiệu với Id = {Id}.", id);
                 return null;
             }
-            return _mapper.Map<BrandResponseDto>(existingBrand);
+
+            var mapperBrand = _mapper.Map<BrandResponseDto>(existingBrand);
+
+            await _cacheService.SetAsync($"{BRANDS_PREFIX}{id}", mapperBrand, TimeSpan.FromMinutes(5));
+            _logger.LogInformation("[BrandService] : Đã lưu brand = {id} vào Redis cache.",id);
+
+            _logger.LogInformation("[BrandService] : Đã lấy thành công thương hiệu có id là {id}.", id);
+            return mapperBrand;
         }
 
         public async Task<bool> UpdateAsync(int id,BrandRequestDto dto)
@@ -122,8 +165,11 @@ namespace LaptopStore.Services.Implements
             existingBrand.Name = brandName;
 
             await _unitOfWork.SaveChangesAsync();
-            _logger.LogInformation("[BrandService] : Cập nhật thành công thương hiệu Id = {Id}.", id);
 
+            await _cacheService.RemoveAsync(ALL_BRANDS_KEY);
+            await _cacheService.RemoveAsync($"{BRANDS_PREFIX}{id}");
+
+            _logger.LogInformation("[BrandService] : Cập nhật thành công thương hiệu Id = {Id}.", id);
             return true;
         }
     }

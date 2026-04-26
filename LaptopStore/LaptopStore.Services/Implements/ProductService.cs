@@ -20,9 +20,23 @@ namespace LaptopStore.Services.Implements
         private readonly IProductQueryBuilder _productQueryBuilder;
         private readonly ICacheService _cacheService;
         // cache key
-        private string ALL_PRODUCTS_KEY = "products:all";
-        private string PRODUCTS_PREFIX = $"products:id:";
-        private string PRODUCTFILTER = "";
+        private const string ALL_PRODUCTS_KEY = "Products:all";
+        private const string PRODUCTS_PREFIX = $"Products:id:";
+        private static string BuildProductQueryCacheKey(ProductQueryParametersDto query) 
+        {
+            // [ProductService] : Chuẩn hóa chuỗi string (Xóa khoảng trắng thừa và đưa về chữ thường) để tránh lưu trùng lặp cache.
+            string keyword = string.IsNullOrWhiteSpace(query.Keyword) ? "none" : query.Keyword.Trim().ToLower();
+            string sortBy = string.IsNullOrWhiteSpace(query.SortBy) ? "default" : query.SortBy.Trim().ToLower();
+
+            // [ProductService] : Xử lý an toàn các giá trị nullable, gán cho chúng một giá trị mặc định rõ nghĩa.
+            string brand = query.BrandId?.ToString() ?? "all";
+            string category = query.CategoryId?.ToString() ?? "all";
+            string minPrice = query.MinPrice?.ToString() ?? "0";
+            string maxPrice = query.MaxPrice?.ToString() ?? "max";
+
+            // [ProductService] : Format key rõ ràng, dễ dàng debug trên các công cụ quản lý Redis.
+            return $"products:query:{query.PageIndex}:{query.PageSize}:{keyword}:{brand}:{category}:{minPrice}:{maxPrice}:{sortBy}";
+        }
 
         public ProductService(IUnitOfWork unitOfWork, IMapper mapper, ILogger<ProductService> logger, IProductQueryBuilder productQueryBuilder, ICacheService cacheService)
         {
@@ -50,6 +64,8 @@ namespace LaptopStore.Services.Implements
             await _cacheService.RemoveAsync(ALL_PRODUCTS_KEY);
             // [ProductService] : Có thể cache luôn chi tiết sản phẩm mới tạo.
             await _cacheService.SetAsync($"{PRODUCTS_PREFIX}{product.Id}", mappedProduct, TimeSpan.FromMinutes(10));
+
+
             _logger.LogInformation($"[ProductService] : Tạo thành công sản phẩm mới với Id = {product.Id}.");
             return mappedProduct;
         }
@@ -128,7 +144,15 @@ namespace LaptopStore.Services.Implements
 
         public async Task<PagedResultDto<ProductResponseDto>> GetProductsAsync(ProductQueryParametersDto query)
         {
+            
             _logger.LogInformation("[ProductService] : Bắt đầu lấy danh sách sản phẩm có phân trang, lọc, sắp xếp và tìm kiếm.");
+
+            var cached = await _cacheService.GetAsync<PagedResultDto<ProductResponseDto>>(BuildProductQueryCacheKey(query));
+            if (cached != null) 
+            {
+                _logger.LogInformation("[ProductService] : Lấy danh sách sản phẩm từ Redis Cache (Key: {CacheKey}).", BuildProductQueryCacheKey(query));
+                return cached;
+            }
 
             var filter = _productQueryBuilder.BuildFilter(query);
             var orderBy = _productQueryBuilder.BuildOrderBy(query.SortBy);
@@ -143,19 +167,25 @@ namespace LaptopStore.Services.Implements
                     pageSize: query.PageSize,
                     tracked: false
                 );
-            _logger.LogInformation(
-            "[ProductService] : Lấy danh sách sản phẩm thành công. PageIndex = {PageIndex}, PageSize = {PageSize}, TotalRecords = {TotalRecords}.",
-            query.PageIndex,
-            query.PageSize,
-            totalRecords);
 
-            return new PagedResultDto<ProductResponseDto>
+
+            var mapperProducts = new PagedResultDto<ProductResponseDto>
             {
                 Items = _mapper.Map<List<ProductResponseDto>>(items),
                 TotalRecords = totalRecords,
                 PageIndex = query.PageIndex,
                 PageSize = query.PageSize
             };
+
+            await _cacheService.SetAsync(BuildProductQueryCacheKey(query), mapperProducts, TimeSpan.FromMinutes(5));
+
+            _logger.LogInformation(
+            "[ProductService] : Lấy danh sách sản phẩm thành công. PageIndex = {PageIndex}, PageSize = {PageSize}, TotalRecords = {TotalRecords}.",
+            query.PageIndex,
+            query.PageSize,
+            totalRecords);
+
+            return mapperProducts;
         }
 
         public async Task<bool> UpdateAsync(int id, ProductRequestDto dto)

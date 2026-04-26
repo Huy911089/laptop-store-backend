@@ -22,6 +22,9 @@ namespace LaptopStore.API
         {
             var builder = WebApplication.CreateBuilder(args);
 
+            // [Program] : Hỗ trợ hiển thị tiếng Việt có dấu trên Console
+            Console.OutputEncoding = Encoding.UTF8;
+
             // Add services to the container.
             builder.Services.AddControllers();
             // Learn more about configuring Swagger/OpenAPI at https://aka.ms/aspnetcore/swashbuckle
