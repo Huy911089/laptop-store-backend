@@ -19,13 +19,14 @@ namespace LaptopStore.Services.Helpers
         {
             return p => !p.IsDeleted &&
             // [ProductQueryBuilder] : Search theo từ khóa. Nếu keyword rỗng thì bỏ qua điều kiện này.
-            (string.IsNullOrWhiteSpace(query.Keyword)) ||
+            (string.IsNullOrWhiteSpace(query.Keyword) ||
             p.Name.Contains(query.Keyword) ||
             p.Description.Contains(query.Keyword) ||
             p.Cpu.Contains(query.Keyword) ||
             p.Ram.Contains(query.Keyword) ||
             p.Storage.Contains(query.Keyword) ||
-            p.Vga.Contains(query.Keyword) &&
+            p.Vga.Contains(query.Keyword)
+            ) &&
             // [ProductQueryBuilder] : Filter theo CategoryId nếu frontend có truyền.
             (!query.CategoryId.HasValue || p.CategoryId == query.CategoryId.Value) &&
 

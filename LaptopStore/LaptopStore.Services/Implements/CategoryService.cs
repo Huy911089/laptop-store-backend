@@ -41,6 +41,7 @@ namespace LaptopStore.Services.Implements
 
             await _cacheService.RemoveAsync(ALL_CATEGORIES_KEY);
             await _cacheService.SetAsync($"{CATEGORIES_PREFIX}{category.Id}",mapperCategogy);
+            _logger.LogInformation("[CategoryService] : Đã lưu category = {id} vào Redis cache.", category.Id);
 
             _logger.LogInformation($"[CategoryService] : Tạo thành công danh mục mới với Id = {category.Id}.");
             return mapperCategogy;
@@ -81,6 +82,7 @@ namespace LaptopStore.Services.Implements
             var mapperCategories = _mapper.Map<IEnumerable<CategoryResponseDto>>(categories);
 
             await _cacheService.SetAsync(ALL_CATEGORIES_KEY, mapperCategories, TimeSpan.FromMinutes(5));
+            _logger.LogInformation("[CategoryService] : Đã lưu danh sách categories vào Redis cache.");
 
             _logger.LogInformation($"[CategoryService] : Đã lấy thành công {categories.Count} danh mục.");
             return mapperCategories;
@@ -92,6 +94,7 @@ namespace LaptopStore.Services.Implements
             var cached = await _cacheService.GetAsync<CategoryResponseDto>($"{CATEGORIES_PREFIX}{id}");
             if (cached != null)
             {
+                _logger.LogInformation("[CategoryService] : Lấy category theo {id} từ Redis cache.", id);
                 return cached;
             }
 
@@ -104,6 +107,7 @@ namespace LaptopStore.Services.Implements
             var mapperCategogy = _mapper.Map<CategoryResponseDto>(existingCategory);
 
             await _cacheService.SetAsync($"{CATEGORIES_PREFIX}{existingCategory.Id}", mapperCategogy,TimeSpan.FromMinutes(5));
+            _logger.LogInformation("[CategoryService] : Đã lưu category = {id} vào Redis cache.",id);
             return mapperCategogy;
         }
 
