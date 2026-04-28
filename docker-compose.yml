@@ -9,7 +9,7 @@ services: # liệt kê các "món đồ" cần dùng.
         - "1434:1433" # Ánh xạ cổng: Máy thật 1434 -> Container 1433
         environment:
         - ACCEPT_EULA=Y # Bắt buộc: Chấp nhận điều khoản của Microsoft
-        - MSSQL_SA_PASSWORD=LuanLaptopStore@2026  # Mật khẩu tài khoản 'sa' (tự đổi)
+        - MSSQL_SA_PASSWORD=${SQL_PASSWORD}  # Mật khẩu tài khoản 'sa' (tự đổi)
         volumes:
         - sql_data:/var/opt/mssql # Lưu trữ dữ liệu ra máy thật để không bị mất khi xóa container
         restart: always # (Mẹo thêm) Cấu hình tự khởi động lại container nếu máy tính restart
@@ -19,8 +19,69 @@ services: # liệt kê các "món đồ" cần dùng.
         container_name: laptopstore-redis
         ports:
          - "6379:6379" # Ánh xạ cổng: Máy thật 6379 -> Container 6379
-        command: ["redis-server", "--appendonly", "yes"] # Bật chế độ lưu dữ liệu xuống ổ đĩa
+                 # Nếu chỉ định nghĩa dòng ở trên mà không map volume, dữ liệu sẽ chỉ lưu trong container và sẽ mất khi container bị xóa.
+        command: ["redis-server", "--appendonly", "yes","--requirepass", "${REDIS_PASSWORD}"] # Bật chế độ lưu dữ liệu xuống ổ đĩa là câu "--appendonly", có thể thêm mật khẩu bằng cách ["--requirepass", "MatKhauCuaBan123@"]
         restart: always # (Mẹo thêm) Cấu hình tự khởi động lại container nếu máy tính restart
+        volumes:
+        - redis_data:/data # Khuyên dùng: Nên map thêm volume để file AOF được lưu ra máy thật
 # Định nghĩa nơi lưu trữ dữ liệu bền vững
+    # --- Dịch vụ 3 : Graylog ---
+    mongodb: # Tên dịch vụ tự đặt , (Lưu thông tin user đăng nhập Graylog, cấu hình dashboard,...)
+        image: "mongo:6.0" # Tải bộ cài MongoDB phiên bản 6.0 từ Docker Hub.
+        container_name: laptopstore-mongodb # Đặt tên để dễ nhìn khi gõ lệnh 'docker ps'.
+        volumes:
+            - mongodb_data:/data/db # Ánh xạ dữ liệu trong container (/data/db) ra ngoài máy thật (mongodb_data). Xóa container thì cấu hình không bị mất.
+        restart: always
+    
+    opensearch: # "Trái tim" lưu trữ dữ liệu. Nó là một database tối ưu hóa cực mạnh cho việc tìm kiếm text tốc độ cao.
+        image: "opensearchproject/opensearch:2.11.0" # Dùng OpenSearch (một bản fork mã nguồn mở từ Elasticsearch).
+        container_name: laptopstore-opensearch
+        environment:
+            - "OPENSEARCH_JAVA_OPTS=-Xms512m -Xms512m" # Giới hạn RAM. Bắt buộc OpenSearch chỉ dùng đúng 512MB RAM, tránh việc nó ngốn hết RAM máy ảo/Macbook của bạn gây giật lag.
+            - "bootstrap.memory_lock=true" # Ép hệ điều hành không được đẩy bộ nhớ của OpenSearch ra ổ cứng (Swap), giúp tốc độ tìm kiếm luôn ở mức nhanh nhất.
+            - "discovery.type=single-node" # Báo cho OpenSearch biết nó đang chạy 1 mình (local dev), không cần đi tìm các node khác để ghép thành cụm cluster lớn.
+            - "action.auto_create_index=false" # Chặn việc tự động tạo bảng (index), để Graylog nắm quyền kiểm soát hoàn toàn cấu trúc dữ liệu.
+            - "plugins.security.disabled=true" # Tắt tính năng bảo mật nội bộ để dễ dàng setup ở môi trường dev.
+        ulimits:
+            memlock:
+                soft: -1
+                hard: -1 # Cấu hình lõi của Linux (ulimit), cấp quyền vô hạn (-1) cho container này được phép khóa RAM (đi kèm với biến bootstrap.memory_lock ở trên).
+        volumes:
+            - opensearch_data:/usr/share/opensearch/data
+        restart: always
+
+    graylog: # Nó nhận log từ .NET, đẩy vào OpenSearch để lưu, và khi muốn tìm kiếm, nó lấy từ OpenSearch lên giao diện Web cho bạn xem.
+        image: "graylog/graylog:5.2"
+        container_name: laptopstore-graylog
+        depends_on:
+            - mongodb
+            - opensearch
+            # Tính năng cực hay: Đảm bảo Docker phải bật Mongo và OpenSearch lên trước rồi mới được phép bật Graylog.
+        entrypoint: /usr/bin/tini -- wait-for-it opensearch:9200 -- /docker-entrypoint.sh
+        # Lệnh chờ thông minh: Dù OpenSearch đã bật, nhưng mất vài chục giây để khởi động xong. Lệnh này ép Graylog phải chờ đến khi port 9200 của OpenSearch sẵn sàng 100% thì mới chạy, tránh lỗi sập mạng.
+        environment:
+            - GRAYLOG_NODE_ID=81033284-482a-4299-a681-344444444444 # Mã định danh duy nhất cho cái node Graylog này.
+            - GRAYLOG_PASSWORD_SECRET=${GRAYLOG_SECRET} # Chuỗi mật khẩu ngẫu nhiên dùng để mã hóa (salt) các dữ liệu nhạy cảm.
+            - GRAYLOG_ROOT_PASSWORD_SHA2=${GRAYLOG_PASSWORD_SHA2} # Mật khẩu tài khoản admin đã được hash bằng SHA256 (mật khẩu gốc là "admin").
+            - GRAYLOG_HTTP_BIND_ADDRESS=0.0.0.0:9000 # Mở cửa cho phép mạng bên ngoài (máy tính của em) truy cập vào giao diện Web ở cổng 9000.
+            - GRAYLOG_HTTP_EXTERNAL_URI=http://localhost:9000/ # Địa chỉ URL mà Graylog sẽ sử dụng để tạo các liên kết trong giao diện Web. Dù em có đổi cổng 9000 thành 9001, thì vẫn phải giữ nguyên URL này để tránh lỗi liên kết hỏng.
+
+            # 2 dòng dưới là cách Graylog "nói chuyện" với Mongo và OpenSearch thông qua mạng ảo của Docker. 
+            # Để ý chữ 'opensearch' và 'mongodb' chính là tên service em đặt ở 2 block trên.
+            - GRAYLOG_ELASTICSEARCH_HOSTS=http://opensearch:9200 # Cấu hình để Graylog biết phải kết nối đến OpenSearch ở đâu (dùng tên dịch vụ "opensearch" chứ không phải "localhost" vì chúng đang chạy trong cùng một mạng ảo của Docker).
+            - GRAYLOG_MONGODB_URI=mongodb://mongodb:27017/graylog # Cấu hình để Graylog biết phải kết nối đến MongoDB ở đâu (dùng tên dịch vụ "mongodb" chứ không phải "localhost" vì chúng đang chạy trong cùng một mạng ảo của Docker).
+        ports:
+            - "9000:9000" # Ánh xạ cổng: Máy thật 9000 -> Container 9000 (giao diện Web của Graylog)
+            - "12201:12201/udp" # Ánh xạ cổng: Máy thật 12201 -> Container 12201 (cổng nhận log từ .NET, dùng giao thức UDP)
+            # CỔNG QUAN TRỌNG NHẤT DÀNH CHO BACKEND: Đây là cổng chờ nhận log. 
+            # Nó dùng giao thức UDP thay vì TCP. Lý do là để API C# của em chỉ việc "nhắm mắt bắn log" qua cổng này rồi chạy tiếp logic, không cần chờ Graylog trả lời có nhận được hay chưa. Giúp API không bao giờ bị chậm đi vì ghi log.
+        volumes:
+            - graylog_data:/usr/share/graylog/data # Lưu lại cấu hình định tuyến log ra máy thật.
+        restart: always
+
 volumes:
     sql_data:
+    redis_data:
+    mongodb_data:
+    opensearch_data:
+    graylog_data:
