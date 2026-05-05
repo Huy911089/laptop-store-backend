@@ -14,5 +14,7 @@ namespace LaptopStore.Services.DTOs.Category
         [Required(ErrorMessage = "Tên danh mục không được để trống")]
         [MaxLength(100, ErrorMessage = "Tên danh mục không được vượt quá 100 ký tự")]
         public string Name { get; set; } = string.Empty;
+
+        public string Description { get; set; } = string.Empty;
     }
 }

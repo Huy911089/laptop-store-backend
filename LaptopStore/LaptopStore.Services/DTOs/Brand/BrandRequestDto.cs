@@ -13,5 +13,8 @@ namespace LaptopStore.Services.DTOs.Brand
         [Required(ErrorMessage = "Tên thương hiệu là bắt buộc.")]
         [MaxLength(100, ErrorMessage = "Tên thương hiệu không được vượt quá 100 ký tự.")]
         public string Name { get; set; } = string.Empty;
+
+        public string Description { get; set; } = string.Empty;
+        public string Country { get; set; } = string.Empty;
     }
 }

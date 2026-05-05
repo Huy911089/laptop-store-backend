@@ -6,7 +6,7 @@ namespace LaptopStore.Repositories.Entities
     // [ProductEntity] : Sản phẩm cốt lõi. Dùng int giúp URL thân thiện (vd: /products/105) và tăng tốc độ indexing khi search.
     public class Product
     {
-        public int Id { get; set; }
+        public int ProductId { get; set; }
         public string Name { get; set; } = null!;
         public string Description { get; set; } = string.Empty;
         public decimal Price { get; set; }

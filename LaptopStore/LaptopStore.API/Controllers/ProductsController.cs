@@ -92,7 +92,7 @@ namespace LaptopStore.API.Controllers
                 _logger.LogInformation("[ProductsController] : Nhận request tạo mới sản phẩm.");
 
                 var created = await _productService.CreateAsync(dto);
-                return CreatedAtAction(nameof(GetById), new { id = created.Id }, new ApiResponse<ProductResponseDto>
+                return CreatedAtAction(nameof(GetById), new { id = created.ProductId }, new ApiResponse<ProductResponseDto>
                 {
                     Status = 201,
                     Message = "Tạo sản phẩm thành công.",

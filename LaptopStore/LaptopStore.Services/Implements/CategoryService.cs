@@ -40,17 +40,17 @@ namespace LaptopStore.Services.Implements
             var mapperCategogy = _mapper.Map<CategoryResponseDto>(category);
 
             await _cacheService.RemoveAsync(ALL_CATEGORIES_KEY);
-            await _cacheService.SetAsync($"{CATEGORIES_PREFIX}{category.Id}",mapperCategogy);
-            _logger.LogInformation("[CategoryService] : Đã lưu category = {id} vào Redis cache.", category.Id);
+            await _cacheService.SetAsync($"{CATEGORIES_PREFIX}{category.CategoryId}",mapperCategogy);
+            _logger.LogInformation("[CategoryService] : Đã lưu category = {id} vào Redis cache.", category.CategoryId);
 
-            _logger.LogInformation($"[CategoryService] : Tạo thành công danh mục mới với Id = {category.Id}.");
+            _logger.LogInformation($"[CategoryService] : Tạo thành công danh mục mới với Id = {category.CategoryId}.");
             return mapperCategogy;
         }
 
         public async Task<bool> DeleteAsync(int id)
         {
             _logger.LogInformation($"[CategoryService] : Bắt đầu xóa mềm danh mục Id = {id}.");
-            var existingCategory = await _unitOfWork.Categories.GetAsync(c => c.Id == id);
+            var existingCategory = await _unitOfWork.Categories.GetAsync(c => c.CategoryId == id);
             if (existingCategory == null)
             {
                 _logger.LogWarning($"[CategoryService] : Thất bại khi xóa. Không tìm thấy danh mục Id = {id}.");
@@ -98,7 +98,7 @@ namespace LaptopStore.Services.Implements
                 return cached;
             }
 
-            var existingCategory = await _unitOfWork.Categories.GetAsync(c => c.Id == id, tracked: false);
+            var existingCategory = await _unitOfWork.Categories.GetAsync(c => c.CategoryId == id, tracked: false);
             if (existingCategory == null)
             {
                 _logger.LogWarning($"[CategoryService] : Không tìm thấy danh mục với Id = {id}.");
@@ -106,7 +106,7 @@ namespace LaptopStore.Services.Implements
             }
             var mapperCategogy = _mapper.Map<CategoryResponseDto>(existingCategory);
 
-            await _cacheService.SetAsync($"{CATEGORIES_PREFIX}{existingCategory.Id}", mapperCategogy,TimeSpan.FromMinutes(5));
+            await _cacheService.SetAsync($"{CATEGORIES_PREFIX}{existingCategory.CategoryId}", mapperCategogy,TimeSpan.FromMinutes(5));
             _logger.LogInformation("[CategoryService] : Đã lưu category = {id} vào Redis cache.",id);
             return mapperCategogy;
         }
@@ -114,7 +114,7 @@ namespace LaptopStore.Services.Implements
         public async Task<bool> UpdateAsync(int id, CategoryRequestDto dto)
         {
             _logger.LogInformation($"[CategoryService] : Bắt đầu cập nhật danh mục Id = {id}.");
-            var existingCategory = await _unitOfWork.Categories.GetAsync(c => c.Id == id);
+            var existingCategory = await _unitOfWork.Categories.GetAsync(c => c.CategoryId == id);
             if (existingCategory == null) 
             {
                 _logger.LogWarning($"[CategoryService] : Thất bại khi cập nhật. Không tìm thấy danh mục Id = {id}.");

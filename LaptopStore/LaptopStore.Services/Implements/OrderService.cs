@@ -1,6 +1,7 @@
 ﻿using AutoMapper;
 using LaptopStore.Repositories.Entities;
 using LaptopStore.Repositories.Interfaces;
+using LaptopStore.Services.DTOs.Kafka;
 using LaptopStore.Services.DTOs.Order;
 using LaptopStore.Services.Interfaces;
 using Microsoft.Extensions.Logging;
@@ -18,6 +19,7 @@ namespace LaptopStore.Services.Implements
         private readonly IUnitOfWork _unitOfWork;
         private readonly ILogger<OrderService> _logger;
         private readonly IMapper _mapper;
+        private readonly IKafkaProducerService _kafkaProducerService;
         private static readonly HashSet<string> ValidStatuses = new(StringComparer.OrdinalIgnoreCase)
         {
             "Pending",
@@ -26,11 +28,12 @@ namespace LaptopStore.Services.Implements
             "Cancelled"
         };
 
-        public OrderService(IUnitOfWork unitOfWork, ILogger<OrderService> logger, IMapper mapper)
+        public OrderService(IUnitOfWork unitOfWork, ILogger<OrderService> logger, IMapper mapper, IKafkaProducerService kafkaProducerService)
         {
             _unitOfWork = unitOfWork;
             _logger = logger;
             _mapper = mapper;
+            _kafkaProducerService = kafkaProducerService;
         }
 
         public async Task<CheckoutOrderResultDto> CheckoutAsync(Guid userId, OrderCreateRequestDto dto)
@@ -103,6 +106,7 @@ namespace LaptopStore.Services.Implements
             }
 
             await _unitOfWork.BeginTransactionAsync();
+            Order? createdOrder = null;
             try
             {
                 // [OrderService] : Tới đây mới được xem là cart hợp lệ để chốt đơn và snapshot giá từ CartItem.UnitPrice.
@@ -127,7 +131,7 @@ namespace LaptopStore.Services.Implements
                     orderDetails.Add(new OrderDetail
                     {
                         OrderId = order.Id,
-                        ProductId = product.Id,
+                        ProductId = product.ProductId,
                         Quantity = item.Quantity,
 
                         // [OrderService] : UnitPrice của OrderDetail phải lấy từ CartItem.UnitPrice đã được user đồng bộ/chấp nhận trước đó.
@@ -141,12 +145,43 @@ namespace LaptopStore.Services.Implements
                 _unitOfWork.CartItems.RemoveRange(cart.CartItems.ToList());
                 await _unitOfWork.SaveChangesAsync();
 
+                // [OrderService] : Chốt transaction DB trước để đảm bảo dữ liệu đơn hàng đã thật sự tồn tại.
+                await _unitOfWork.CommitTransactionAsync();
+
                 _logger.LogInformation("[OrderService] : Checkout thành công. OrderId = {OrderId}, UserId = {UserId}.", order.Id, userId);
 
-                var createdOrder = await _unitOfWork.Orders.GetAsync(
+                createdOrder = await _unitOfWork.Orders.GetAsync(
                     o => o.Id == order.Id,
                     includeProperties: "OrderDetails.Product",
                     tracked: false);
+
+                // [OrderService] : Chỉ bắn Kafka sau khi commit DB thành công.
+                try
+                {
+                    OrderCreatedEventDto? orderCreatedEvent = new OrderCreatedEventDto
+                    {
+                        OrderId = order.Id,
+                        UserId = order.UserId,
+                        TotalAmount = order.TotalAmount,
+                        ShippingAddress = order.ShippingAddress,
+                        PhoneNumber = order.PhoneNumber,
+                        Status = order.Status,
+                        OrderDate = order.OrderDate,
+                    };
+
+                    await _kafkaProducerService.ProduceAsync(
+                            KafkaTopics.OrderCreated,
+                            order.Id.ToString(),
+                            orderCreatedEvent
+                        );
+                    _logger.LogInformation("[OrderService] : Đã publish event OrderCreated cho OrderId = {OrderId}.", order.Id);
+
+                }
+                catch (Exception ex)
+                {
+                    // [OrderService] : Không rollback nữa vì DB đã commit thành công. Kafka fail chỉ log để xử lý sau.
+                    _logger.LogError(ex, "[OrderService] : Order đã tạo thành công nhưng publish Kafka thất bại. OrderId = {OrderId}.", order.Id);
+                }
 
                 return new CheckoutOrderResultDto
                 {
@@ -226,6 +261,9 @@ namespace LaptopStore.Services.Implements
                 _logger.LogWarning("[OrderService] : Không thể đổi trạng thái của đơn đã bị hủy.");
                 return false;
             }
+
+            var oldStatus = order.Status;
+
             if (!order.Status.Equals("Cancelled", StringComparison.OrdinalIgnoreCase) && status.Equals("Cancelled", StringComparison.OrdinalIgnoreCase)) 
             {
                 foreach(var detail in order.OrderDetails) 
@@ -235,6 +273,24 @@ namespace LaptopStore.Services.Implements
             }
             order.Status = status;
             await _unitOfWork.SaveChangesAsync();
+
+            try
+            {
+                var statusChangedEvent = new OrderStatusChangedEventDto
+                {
+                    OrderId = orderId,
+                    OldStatus = oldStatus,
+                    NewStatus = status,
+                    ChangedAt = DateTime.UtcNow,
+                };
+
+                await _kafkaProducerService.ProduceAsync(KafkaTopics.OrderStatusChanged, order.Id.ToString(), statusChangedEvent);
+                _logger.LogInformation("[OrderService] : Đã publish event OrderStatusChanged cho OrderId = {OrderId}.", order.Id);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "[OrderService] : Update status thành công nhưng publish Kafka thất bại. OrderId = {OrderId}.", order.Id);
+            }
 
             _logger.LogInformation("[OrderService] : Cập nhật trạng thái OrderId = {OrderId} thành công.", orderId);
             return true;    
