@@ -31,7 +31,7 @@ namespace LaptopStore.Services.Implements
         {
             _logger.LogInformation("[CartService] : Bắt đầu thêm ProductId = {ProductId} vào cart của user {UserId}.", dto.ProductId, userId);
             var product = await _unitOfWork.Products.GetAsync(
-                p => p.Id == dto.ProductId,
+                p => p.ProductId == dto.ProductId,
                 includeProperties: "ProductImages",
                 tracked: false
                 );
@@ -188,7 +188,7 @@ namespace LaptopStore.Services.Implements
             }
 
             var product = await _unitOfWork.Products.GetAsync(
-                p => p.Id == productId,
+                p => p.ProductId == productId,
                 tracked: false
                 );
             if (product == null) 

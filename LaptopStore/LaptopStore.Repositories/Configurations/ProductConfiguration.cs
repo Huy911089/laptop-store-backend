@@ -15,7 +15,7 @@ namespace LaptopStore.Repositories.Configurations
         public void Configure(EntityTypeBuilder<Product> builder) 
         {
             builder.ToTable("Products");
-            builder.HasKey(x => x.Id);
+            builder.HasKey(x => x.ProductId);
             // [ProductConfiguration] : Giới hạn độ dài chuỗi để tối ưu Database, thay vì để mặc định nvarchar(max).
             builder.Property(x => x.Name).IsRequired().HasMaxLength(200);
             builder.Property(x => x.Price).HasColumnType("decimal(18,2)");

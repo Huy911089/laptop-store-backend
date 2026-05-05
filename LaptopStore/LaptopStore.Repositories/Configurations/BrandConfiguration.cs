@@ -15,7 +15,7 @@ namespace LaptopStore.Repositories.Configurations
         public void Configure(EntityTypeBuilder<Brand> builder)
         {
             builder.ToTable("Brands");
-            builder.HasKey(x => x.Id);
+            builder.HasKey(x => x.BrandId);
             builder.HasIndex(x => x.Name).IsUnique();
             builder.Property(x => x.Name).IsRequired().HasMaxLength(100);
             // [BrandConfiguration] : Query filter giúp những bản ghi bị xóa mềm không xuất hiện trong query thông thường.

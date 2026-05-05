@@ -56,17 +56,17 @@ namespace LaptopStore.Services.Implements
             await _unitOfWork.SaveChangesAsync();
 
             var createdProduct = await _unitOfWork.Products.GetAsync(
-                p => p.Id == product.Id,
+                p => p.ProductId == product.ProductId,
                 includeProperties: "Brand,Category,ProductImages",
                 tracked: false);
             var mappedProduct = _mapper.Map<ProductResponseDto>(createdProduct);
 
             await _cacheService.RemoveAsync(ALL_PRODUCTS_KEY);
             // [ProductService] : Có thể cache luôn chi tiết sản phẩm mới tạo.
-            await _cacheService.SetAsync($"{PRODUCTS_PREFIX}{product.Id}", mappedProduct, TimeSpan.FromMinutes(10));
+            await _cacheService.SetAsync($"{PRODUCTS_PREFIX}{product.ProductId}", mappedProduct, TimeSpan.FromMinutes(10));
 
 
-            _logger.LogInformation($"[ProductService] : Tạo thành công sản phẩm mới với Id = {product.Id}.");
+            _logger.LogInformation($"[ProductService] : Tạo thành công sản phẩm mới với Id = {product.ProductId}.");
             return mappedProduct;
         }
 
@@ -74,7 +74,7 @@ namespace LaptopStore.Services.Implements
         {
             _logger.LogInformation($"[ProductService] : Bắt đầu xóa mềm sản phẩm Id = {id}.");
 
-            var existingProduct = await _unitOfWork.Products.GetAsync(p => p.Id == id);
+            var existingProduct = await _unitOfWork.Products.GetAsync(p => p.ProductId == id);
             if (existingProduct == null)
             {
                 _logger.LogWarning($"[ProductService] : Thất bại khi xóa. Không tìm thấy sản phẩm Id = {id}.");
@@ -126,7 +126,7 @@ namespace LaptopStore.Services.Implements
                 return cached;
             }
             var product = await _unitOfWork.Products.GetAsync(
-                p => p.Id == id && !p.IsDeleted,
+                p => p.ProductId == id && !p.IsDeleted,
                 includeProperties: "Brand,Category,ProductImages",
                 tracked: false);
 
@@ -192,7 +192,7 @@ namespace LaptopStore.Services.Implements
         {
             _logger.LogInformation($"[ProductService] : Bắt đầu cập nhật sản phẩm Id = {id}.");
 
-            var existingProduct = await _unitOfWork.Products.GetAsync(p => p.Id == id && !p.IsDeleted);
+            var existingProduct = await _unitOfWork.Products.GetAsync(p => p.ProductId == id && !p.IsDeleted);
             if (existingProduct == null)
             {
                 _logger.LogWarning($"[ProductService] : Thất bại khi cập nhật. Không tìm thấy sản phẩm Id = {id}.");

@@ -57,9 +57,9 @@ namespace LaptopStore.Services.Implements
             var mapperBrand = _mapper.Map<BrandResponseDto?>(brand);
 
             await _cacheService.RemoveAsync(ALL_BRANDS_KEY);
-            await _cacheService.SetAsync($"{BRANDS_PREFIX}{brand.Id}", mapperBrand,TimeSpan.FromMinutes(5));
+            await _cacheService.SetAsync($"{BRANDS_PREFIX}{brand.BrandId}", mapperBrand,TimeSpan.FromMinutes(5));
 
-            _logger.LogInformation("[BrandService] : Tạo thành công thương hiệu mới với Id = {Id}.", brand.Id);
+            _logger.LogInformation("[BrandService] : Tạo thành công thương hiệu mới với Id = {Id}.", brand.BrandId);
             return mapperBrand;
 
         }
@@ -68,7 +68,7 @@ namespace LaptopStore.Services.Implements
         {
             _logger.LogInformation("[BrandService] : Bắt đầu xóa mềm thương hiệu Id = {Id}.", id);
             var existingBrand = await _unitOfWork.Brands.GetAsync(
-                b => b.Id == id, includeProperties: "Products"
+                b => b.BrandId == id, includeProperties: "Products"
                 );
             if (existingBrand == null) 
             {
@@ -124,7 +124,7 @@ namespace LaptopStore.Services.Implements
                 return cached;
             }
 
-            var existingBrand = await _unitOfWork.Brands.GetAsync(b => b.Id == id, tracked: false);
+            var existingBrand = await _unitOfWork.Brands.GetAsync(b => b.BrandId == id, tracked: false);
             if (existingBrand == null) 
             {
                 _logger.LogWarning("[BrandService] : Không tìm thấy thương hiệu với Id = {Id}.", id);
@@ -145,7 +145,7 @@ namespace LaptopStore.Services.Implements
             string brandName = dto.Name.Trim();
             _logger.LogInformation("[BrandService] : Bắt đầu cập nhật thương hiệu Id = {Id}.", id);
 
-            var existingBrand = await _unitOfWork.Brands.GetAsync(b => b.Id == id);
+            var existingBrand = await _unitOfWork.Brands.GetAsync(b => b.BrandId == id);
             if (existingBrand == null) 
             {
                 _logger.LogWarning("[BrandService] : Thất bại khi cập nhật. Không tìm thấy thương hiệu Id = {Id}.", id);
@@ -153,7 +153,7 @@ namespace LaptopStore.Services.Implements
             }
             // [BrandService] : Kiểm tra xem tên mới có bị trùng với brand khác không.
             var duplicatedBrand = await _unitOfWork.Brands.GetAsync(
-                b => b.Name.ToLower() == brandName.ToLower() && b.Id != id, tracked: false
+                b => b.Name.ToLower() == brandName.ToLower() && b.BrandId != id, tracked: false
                 );
             if (duplicatedBrand != null) 
             {

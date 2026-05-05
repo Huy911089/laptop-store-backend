@@ -12,5 +12,7 @@ namespace LaptopStore.Services.DTOs.Brand
         public int Id { get; set; }
         // [BrandResponseDto] : Tên thương hiệu hiển thị ra giao diện.
         public string Name { get; set; } = string.Empty;
+        public string Description { get; set; } = string.Empty;
+        public string Country { get; set; } = string.Empty;
     }
 }

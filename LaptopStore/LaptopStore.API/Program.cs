@@ -16,6 +16,7 @@ using Microsoft.Extensions.Caching.StackExchangeRedis;
 using Serilog;
 using Serilog.Sinks.Graylog;
 using Serilog.Sinks.Graylog.Core.Transport;
+using Serilog.Events;
 
 namespace LaptopStore.API
 {
@@ -23,9 +24,21 @@ namespace LaptopStore.API
     {
         public static void Main(string[] args)
         {
+
+            var builder = WebApplication.CreateBuilder(args);
+
             // [Program] : Khởi tạo hệ thống Log tập trung Graylog , Cấu hình Serilog ngay dòng đầu tiên
             Log.Logger = new LoggerConfiguration()
-                .MinimumLevel.Information()
+                /*
+                 * Sẽ không sử dụng 3 dòng này lý do nó sẽ gây hard code thay vào đó mình có thể sử dụng appsettings.json để chưa và sau này mình sửa sẽ dễ hơn
+                 * Trường hợp để như vậy sẽ gây ra mốt mình ko muốn nữa thì phải mở code lên comment lại và build deploy lại các thứ rất phiên và ko nên
+                //.MinimumLevel.Information()
+                // 1. Ép tất cả log từ namespace "Microsoft" chỉ hiện từ mức Warning trở lên
+                //.MinimumLevel.Override("Microsoft",LogEventLevel.Warning)
+                // 2. (Tùy chọn) Nếu vẫn muốn xem Microsoft log nhẹ, nhưng ghét riêng EF Core SQL:
+                //.MinimumLevel.Override("Microsoft.EntityFrameworkCore.Database.Command", LogEventLevel.Warning)
+                */
+                .ReadFrom.Configuration(builder.Configuration) // Yêu cầu Serilog lấy các luật Override từ appsettings.json
                 .WriteTo.Console()
                 .WriteTo.Graylog(new GraylogSinkOptions
                 {
@@ -37,7 +50,7 @@ namespace LaptopStore.API
 
             try
             {
-                var builder = WebApplication.CreateBuilder(args);
+                
                 // Chặn ILogger mặc định của Microsoft và thay bằng Serilog
                 builder.Host.UseSerilog();
 
@@ -94,6 +107,11 @@ namespace LaptopStore.API
             });
 
 
+                //[Program] : Đăng ký Options Pattern cho kafka
+                builder.Services.Configure<KafkaOptions>(
+                        builder.Configuration.GetSection(KafkaOptions.SectionName)
+                    );
+
 
                 // [Program] : Bind section JwtSettings từ appsettings sang class typed options để inject bằng IOptions<JwtSettings>.
                 //gom các thông số (Key, Issuer, hạn sử dụng...) viết trong file appsettings.json và "nhồi" vào class C# JwtSettings
@@ -135,6 +153,7 @@ namespace LaptopStore.API
                 builder.Services.AddScoped<ICacheService, CacheService>();
                 // [Program] : Đăng ký AutoMapper, tự động quét các Profile trong assembly của tầng Services
                 builder.Services.AddAutoMapper(typeof(AutoMapperProfile));
+                builder.Services.AddSingleton<IKafkaProducerService, KafkaProducerService>();
 
                 var app = builder.Build();
 
@@ -154,7 +173,7 @@ namespace LaptopStore.API
 
                 app.Run();
             }
-            catch (Exception ex)
+            catch (Exception ex) when (ex is not HostAbortedException) // Dặn catch bỏ qua lỗi ngắt của EF Core
             {
                 Log.Fatal(ex, "[System] : Ứng dụng dừng đột ngột do lỗi chí mạng!");
             }
