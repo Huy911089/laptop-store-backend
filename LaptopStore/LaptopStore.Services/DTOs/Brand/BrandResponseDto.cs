@@ -9,7 +9,7 @@ namespace LaptopStore.Services.DTOs.Brand
     public class BrandResponseDto
     {
         // [BrandResponseDto] : Id dùng để frontend thao tác update, delete hoặc lấy chi tiết thương hiệu.
-        public int Id { get; set; }
+        public int BrandId { get; set; }
         // [BrandResponseDto] : Tên thương hiệu hiển thị ra giao diện.
         public string Name { get; set; } = string.Empty;
         public string Description { get; set; } = string.Empty;
