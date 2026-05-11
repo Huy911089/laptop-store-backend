@@ -106,7 +106,7 @@ namespace LaptopStore.API.Controllers
             {
                 _logger.LogInformation("[CategoriesController] : Nhận request tạo mới danh mục.");
                 var result = await _categoryService.CreateAsync(dto);
-                return CreatedAtAction(nameof(GetById), new { id = result.Id }, new ApiResponse<CategoryResponseDto>
+                return CreatedAtAction(nameof(GetById), new { id = result.CategoryId }, new ApiResponse<CategoryResponseDto>
                 {
                     Status = 201,
                     Message = "Tạo danh mục thành công.",

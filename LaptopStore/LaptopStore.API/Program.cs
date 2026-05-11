@@ -155,7 +155,21 @@ namespace LaptopStore.API
                 builder.Services.AddAutoMapper(typeof(AutoMapperProfile));
                 builder.Services.AddSingleton<IKafkaProducerService, KafkaProducerService>();
 
+
+                builder.Services.AddCors(options =>
+                {
+                    options.AddPolicy("AllowFrontend", policy =>
+                    {
+                        policy
+                            .WithOrigins("http://localhost:5173")
+                            .AllowAnyHeader()
+                            .AllowAnyMethod();
+                    });
+                });
+
                 var app = builder.Build();
+
+
 
                 // Configure the HTTP request pipeline.
                 if (app.Environment.IsDevelopment())
@@ -165,7 +179,7 @@ namespace LaptopStore.API
                 }
 
                 app.UseHttpsRedirection();
-
+                app.UseCors("AllowFrontend");
                 app.UseAuthentication();
                 app.UseAuthorization();
 
