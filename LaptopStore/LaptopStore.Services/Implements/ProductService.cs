@@ -29,13 +29,22 @@ namespace LaptopStore.Services.Implements
             string sortBy = string.IsNullOrWhiteSpace(query.SortBy) ? "default" : query.SortBy.Trim().ToLower();
 
             // [ProductService] : Xử lý an toàn các giá trị nullable, gán cho chúng một giá trị mặc định rõ nghĩa.
-            string brand = query.BrandId?.ToString() ?? "all";
-            string category = query.CategoryId?.ToString() ?? "all";
+            string brandId = query.BrandId?.ToString() ?? "all";
+            string categoryId = query.CategoryId?.ToString() ?? "all";
             string minPrice = query.MinPrice?.ToString() ?? "0";
             string maxPrice = query.MaxPrice?.ToString() ?? "max";
 
+            // [ProductService] : Sắp xếp mảng trước khi join để [1,2] và [2,1] đều ra chung 1 key là "1-2"
+            string brandIds = query.BrandIds == null ? "all" : string.Join("-", query.BrandIds.OrderBy(id => id));
+            string categoryIds = query.CategoryIds == null ? "all" : string.Join("-", query.CategoryIds.OrderBy(id => id));
+            string cpus = query.Cpus == null ? "all" : string.Join("-", query.Cpus.OrderBy(c => c));
+            string rams = query.Rams == null ? "all" : string.Join("-", query.Rams.OrderBy(r => r));
+            string storages = query.Storages == null ? "all" : string.Join("-", query.Storages.OrderBy(s => s));
+            string vgas = query.Vgas == null ? "all" : string.Join("-", query.Vgas.OrderBy(v => v));
+            string screens = query.ScreenSizes == null ? "all" : string.Join("-", query.ScreenSizes.OrderBy(s => s));
+
             // [ProductService] : Format key rõ ràng, dễ dàng debug trên các công cụ quản lý Redis.
-            return $"products:query:{query.PageIndex}:{query.PageSize}:{keyword}:{brand}:{category}:{minPrice}:{maxPrice}:{sortBy}";
+            return $"products:query:{query.PageIndex}:{query.PageSize}:{keyword}:b={brandId}:bs={brandIds}:c={categoryId}:cs={categoryIds}:cpu={cpus}:ram={rams}:storage={storages}:vga={vgas}:screen={screens}:min={minPrice}:max={maxPrice}:sort={sortBy}";
         }
 
         public ProductService(IUnitOfWork unitOfWork, IMapper mapper, ILogger<ProductService> logger, IProductQueryBuilder productQueryBuilder, ICacheService cacheService)
