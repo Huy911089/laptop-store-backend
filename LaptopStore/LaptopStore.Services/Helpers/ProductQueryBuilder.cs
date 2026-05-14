@@ -30,12 +30,29 @@ namespace LaptopStore.Services.Helpers
             // [ProductQueryBuilder] : Filter theo CategoryId nếu frontend có truyền.
             (!query.CategoryId.HasValue || p.CategoryId == query.CategoryId.Value) &&
 
+            // [ProductQueryBuilder] : Filter theo nhiều CategoryIds nếu frontend có truyền.
+            (query.CategoryIds == null || !query.CategoryIds.Any() || query.CategoryIds.Contains(p.CategoryId)) &&
+
             // [ProductQueryBuilder] : Filter theo BrandId nếu frontend có truyền.
             (!query.BrandId.HasValue || p.BrandId == query.BrandId.Value) &&
 
+            // [ProductQueryBuilder] : Filter theo nhiều BrandIds nếu frontend có truyền.
+            (query.BrandIds == null || !query.BrandIds.Any() || query.BrandIds.Contains(p.BrandId)) &&
+
+            // [ProductQueryBuilder] : Filter theo nhiều CPUs nếu frontend có truyền.
+            (query.Cpus == null || !query.Cpus.Any() || query.Cpus.Any(cpu => p.Cpu.Contains(cpu))) &&
+            // [ProductQueryBuilder] : Filter theo nhiều RAMs nếu frontend có truyền.
+            (query.Rams == null || !query.Rams.Any() || query.Rams.Any(ram => p.Ram.Contains(ram)) &&
+            // [ProductQueryBuilder] : Filter theo nhiều Storages nếu frontend có truyền.
+            (query.Storages == null || !query.Storages.Any() || query.Storages.Any(storage => p.Storage.Contains(storage))) &&
+            // [ProductQueryBuilder] : Filter theo nhiều Vgas nếu frontend có truyền.
+            (query.Vgas == null || !query.Vgas.Any() || query.Vgas.Any(vga => p.Vga.Contains(vga))) &&
+            // [ProductQueryBuilder] : Filter theo nhiều ScreenSizes nếu frontend có truyền.
+            (query.ScreenSizes == null || !query.ScreenSizes.Any() || query.ScreenSizes.Any(screenSize => p.ScreenSize.Contains(screenSize))) &&
+
             // [ProductQueryBuilder] : Filter theo khoảng giá.
             (!query.MinPrice.HasValue || p.Price >= query.MinPrice.Value) &&
-            (!query.MaxPrice.HasValue || p.Price <= query.MaxPrice.Value);
+            (!query.MaxPrice.HasValue || p.Price <= query.MaxPrice.Value));
         }
 
 
