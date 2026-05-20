@@ -187,7 +187,7 @@ namespace LaptopStore.Services.Implements
             var accessTokenResult = _tokenService.GenerateAccessToken(user);
             // [AuthService] : Gọi TokenService để sinh refresh token ngẫu nhiên.
             string refreshToken = _tokenService.GenerateRefreshToken();
-            DateTime refreshTokenExpiresAtUtc = DateTime.UtcNow.AddDays(7);
+            DateTime refreshTokenExpiresAtUtc = DateTime.UtcNow.AddDays(_jwtSettings.RefreshTokenExpireDays);
             var refreshTokenEntity = new RefreshToken
             {
                 UserId = user.Id,
