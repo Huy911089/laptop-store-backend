@@ -20,7 +20,8 @@ namespace LaptopStore.Services.DTOs.Auth
         public string Email { get; set; } = string.Empty;
         // [RegisterRequestDto] : Password raw chỉ dùng lúc nhận request, tuyệt đối không lưu trực tiếp xuống DB.
         [Required]
-        [MaxLength(6)]
+        [MinLength(6)]
+        [MaxLength(100)]
         public string Password { get; set; } = string.Empty;
         // [RegisterRequestDto] : Có thể cho phép null để customer cập nhật sau.
         [MaxLength(20)]
